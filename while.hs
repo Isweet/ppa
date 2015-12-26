@@ -1,6 +1,11 @@
-module While (Stmt, BExp, AExp, OpR, OpB, OpA, Num, Var, whileParser) where 
+{-# LANGUAGE FlexibleContexts #-}
+
+module While (Stmt, BExp, AExp, OpR, OpB, OpA, Num, Var, whileParser, testWhileParser) where 
+
+import Control.Monad.Identity
 
 import Prelude hiding (Num, GT, LT)
+import Text.Parsec
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Char as Char
 import qualified Text.ParserCombinators.Parsec.Language as Language
@@ -65,37 +70,37 @@ integer = Token.integer whileLexer
 -- Parser
 
     -- Stmt
-whileParser :: Parser Stmt
+whileParser :: ParsecT String Integer Identity Stmt
 whileParser = whiteSpace >> stmt
 
-stmt :: Parser Stmt
+stmt :: ParsecT String Integer Identity Stmt
 stmt =     parens stmt
        <|> seqStmt 
 
-seqStmt :: Parser Stmt
+seqStmt :: ParsecT String Integer Identity Stmt
 seqStmt = do
     stmts <- (sepBy1 stmt' semi)
     return $ toSeq stmts
 
-stmt' :: Parser Stmt
+stmt' :: ParsecT String Integer Identity Stmt
 stmt' =     ifStmt
         <|> whileStmt
         <|> skipStmt
         <|> assignStmt
 
-assignStmt :: Parser Stmt
+assignStmt :: ParsecT String Integer Identity Stmt
 assignStmt = do
     var <- identifier
     reservedOp ":="
     exp <- aExp
     return $ SAssign var exp
 
-skipStmt :: Parser Stmt
+skipStmt :: ParsecT String Integer Identity Stmt
 skipStmt = do 
     reserved "skip"
     return $ SSkip
 
-ifStmt :: Parser Stmt
+ifStmt :: ParsecT String Integer Identity Stmt
 ifStmt = do 
     reserved "if"
     cond <- bExp
@@ -105,7 +110,7 @@ ifStmt = do
     s2 <- stmt
     return $ SIf cond s1 s2
 
-whileStmt :: Parser Stmt
+whileStmt :: ParsecT String Integer Identity Stmt
 whileStmt = do 
     reserved "while"
     cond <- bExp
@@ -130,7 +135,7 @@ termB =     parens bExp
                         relation =     (reservedOp ">" >> return GT)
                                    <|> (reservedOp "<" >> return LT)
 
-bExp :: Parser BExp
+bExp :: ParsecT String Integer Identity BExp
 bExp = Expr.buildExpressionParser opB termB
 
     -- AExp
@@ -147,5 +152,13 @@ termA =     parens aExp
                 num <- integer
                 return $ ANum num
 
-aExp :: Parser AExp
+aExp :: ParsecT String Integer Identity AExp
 aExp = Expr.buildExpressionParser opA termA
+
+-- Convenience
+
+testWhileParser :: String -> IO ()
+testWhileParser s = case runIdentity $ runParserT whileParser 0 "" s of
+    Left _ -> error "Balls."
+    Right r -> putStrLn $ show $ r
+
