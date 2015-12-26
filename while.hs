@@ -16,12 +16,12 @@ data OpR = LT | GT deriving (Show)
 
 data AExp = AVar Var | ANum Num | AOpA OpA AExp AExp deriving (Show)
 data BExp = BTrue | BFalse | BNot BExp | BOpB OpB BExp BExp | BOpR OpR AExp AExp deriving (Show)
-data Stmt = SAssign Var AExp | SSkip | SSeq Stmt Stmt | SIf BExp Stmt Stmt | SWhile BExp Stmt deriving (Show)
+data Stmt = SAssign Var AExp | SSkip | SSeq [Stmt] | SIf BExp Stmt Stmt | SWhile BExp Stmt deriving (Show)
 
 -- Helpers
 toSeq :: [Stmt] -> Stmt
 toSeq (h:[]) = h
-toSeq (h:t)  = SSeq h (toSeq t)
+toSeq l = SSeq l
 
 -- While Definition
 whileDef = Language.emptyDef 
