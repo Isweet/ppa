@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module While (Stmt, showL, testWhileParser) where
+module While (Stmt, showL, parse) where
 
 import Control.Monad.Identity
 
 import Prelude hiding (Num, GT, LT)
-import Text.Parsec
-import Text.ParserCombinators.Parsec
+import Text.Parsec hiding (parse)
+import Text.ParserCombinators.Parsec hiding (parse)
 import qualified Text.ParserCombinators.Parsec.Char as Char
 import qualified Text.ParserCombinators.Parsec.Language as Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
@@ -67,6 +67,11 @@ showL (SSkip l) = "[" ++ "skip" ++ "]^" ++ (show l) ++ ";"
 showL (SSeq ss) = "(" ++ ((init . init) (concat (map (((flip (++)) " ") . showL) ss))) ++ ");"
 showL (SIf b l s1 s2) = "if " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " then " ++ (showL s1) ++ " else " ++ (showL s2)
 showL (SWhile b l s) = "while " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " do " ++ (showL s)
+
+parse :: String -> Stmt
+parse s = case runIdentity $ runParserT whileParser 1 "" s of
+    Left l -> error $ show l
+    Right r -> r
 
 -- Helpers
 toSeq :: [Stmt] -> Stmt
@@ -207,10 +212,3 @@ termA =     parens aExp
 
 aExp :: ParsecT String Integer Identity AExp
 aExp = Expr.buildExpressionParser opA termA
-
--- Convenience
-
-testWhileParser :: String -> Stmt
-testWhileParser s = case runIdentity $ runParserT whileParser 1 "" s of
-    Left l -> error $ show l
-    Right r -> r
