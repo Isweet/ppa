@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module While (Stmt, BExp, AExp, OpR, OpB, OpA, Num, Var, whileParser, testWhileParser) where 
+module While (Stmt, showL, testWhileParser) where
 
 import Control.Monad.Identity
 
@@ -14,14 +14,59 @@ import qualified Text.ParserCombinators.Parsec.Expr as Expr
 
 type Var = String
 type Num = Integer
+type Lab = Integer
 
-data OpA = Add | Subtract | Multiply | Divide deriving (Show)
-data OpB = And | Or deriving (Show)
-data OpR = LT | GT deriving (Show)
+data OpA = Add | Subtract | Multiply | Divide
 
-data AExp = AVar Var | ANum Num | AOpA OpA AExp AExp deriving (Show)
-data BExp = BTrue | BFalse | BNot BExp | BOpB OpB BExp BExp | BOpR OpR AExp AExp deriving (Show)
-data Stmt = SAssign Var AExp | SSkip | SSeq [Stmt] | SIf BExp Stmt Stmt | SWhile BExp Stmt deriving (Show)
+instance Show OpA where
+    show Add = "+"
+    show Subtract = "-"
+    show Multiply = "*"
+    show Divide = "/"
+
+data OpB = And | Or
+
+instance Show OpB where
+    show And = "&&"
+    show Or = "||"
+
+data OpR = LT | GT
+
+instance Show OpR where
+    show LT = "<"
+    show GT = ">"
+
+data AExp = AVar Var | ANum Num | AOpA OpA AExp AExp
+
+instance Show AExp where
+    show (AVar x) = x
+    show (ANum n) = show n
+    show (AOpA o a1 a2) = "(" ++ (show a1) ++ " " ++ (show o) ++ " " ++ (show a2) ++ ")"
+
+data BExp = BTrue | BFalse | BNot BExp | BOpB OpB BExp BExp | BOpR OpR AExp AExp
+
+instance Show BExp where
+    show BTrue = "true"
+    show BFalse = "false"
+    show (BNot b) = "~" ++ "(" ++ (show b) ++ ")"
+    show (BOpB o b1 b2) = "(" ++ (show b1) ++ " " ++ (show o) ++ " " ++ (show b2) ++ ")"
+    show (BOpR o a1 a2) = "(" ++ (show a1) ++ " " ++ (show o) ++ " " ++ (show a2) ++ ")"
+
+data Stmt = SAssign Var AExp Lab | SSkip Lab | SSeq [Stmt] | SIf BExp Lab Stmt Stmt | SWhile BExp Lab Stmt
+
+instance Show Stmt where
+    show (SAssign x a _) = x ++ " := " ++ (show a) ++ ";"
+    show (SSkip _) = "skip;"
+    show (SSeq ss) = "(" ++ ((init . init) (concat (map (((flip (++)) " ") . show) ss))) ++ ");"
+    show (SIf b _ s1 s2) = "if " ++ (show b) ++ " then " ++ (show s1) ++ " else " ++ (show s2)
+    show (SWhile b _ s) = "while " ++ (show b) ++ " do " ++ (show s)
+
+showL :: Stmt -> String
+showL (SAssign x a l) = "[" ++ x ++ " := " ++ (show a) ++ "]^" ++ (show l) ++ ";"
+showL (SSkip l) = "[" ++ "skip" ++ "]^" ++ (show l) ++ ";"
+showL (SSeq ss) = "(" ++ ((init . init) (concat (map (((flip (++)) " ") . showL) ss))) ++ ");"
+showL (SIf b l s1 s2) = "if " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " then " ++ (showL s1) ++ " else " ++ (showL s2)
+showL (SWhile b l s) = "while " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " do " ++ (showL s)
 
 -- Helpers
 toSeq :: [Stmt] -> Stmt
@@ -93,30 +138,38 @@ assignStmt = do
     var <- identifier
     reservedOp ":="
     exp <- aExp
-    return $ SAssign var exp
+    l <- getState
+    modifyState (+1)
+    return $ SAssign var exp l
 
 skipStmt :: ParsecT String Integer Identity Stmt
 skipStmt = do 
     reserved "skip"
-    return $ SSkip
+    l <- getState
+    modifyState (+1)
+    return $ SSkip l
 
 ifStmt :: ParsecT String Integer Identity Stmt
 ifStmt = do 
     reserved "if"
     cond <- bExp
+    l <- getState
+    modifyState (+1)
     reserved "then"
     s1 <- stmt
     reserved "else"
     s2 <- stmt
-    return $ SIf cond s1 s2
+    return $ SIf cond l s1 s2
 
 whileStmt :: ParsecT String Integer Identity Stmt
 whileStmt = do 
     reserved "while"
     cond <- bExp
+    l <- getState
+    modifyState (+1)
     reserved "do"
     s <- stmt
-    return $ SWhile cond s
+    return $ SWhile cond l s
 
     -- BExp
 opB = [ [ Expr.Prefix (reservedOp "~"  >> return (BNot    ))                ],
@@ -157,8 +210,7 @@ aExp = Expr.buildExpressionParser opA termA
 
 -- Convenience
 
-testWhileParser :: String -> IO ()
-testWhileParser s = case runIdentity $ runParserT whileParser 0 "" s of
-    Left _ -> error "Balls."
-    Right r -> putStrLn $ show $ r
-
+testWhileParser :: String -> Stmt
+testWhileParser s = case runIdentity $ runParserT whileParser 1 "" s of
+    Left l -> error $ show l
+    Right r -> r
