@@ -4,7 +4,7 @@ module PPA.While (Stmt, Block, showL, parse, winit, wfinal, wblocks, wlabels, wf
 
 import Control.Monad.Identity
 
-import Prelude hiding (Num, GT, LT)
+import Prelude hiding (Num, GT, LT, init)
 import Text.Parsec hiding (parse)
 import Text.ParserCombinators.Parsec hiding (parse)
 import qualified Text.ParserCombinators.Parsec.Char as Char
@@ -13,6 +13,7 @@ import qualified Text.ParserCombinators.Parsec.Token as Token
 import qualified Text.ParserCombinators.Parsec.Expr as Expr
 
 import qualified Data.Set as Set
+import qualified Data.List as List
 
 type Var = String
 type Num = Integer
@@ -57,11 +58,11 @@ instance Show BExp where
 data Stmt = SAssign Var AExp Lab | SSkip Lab | SSeq [Stmt] | SIf BExp Lab Stmt Stmt | SWhile BExp Lab Stmt deriving (Eq, Ord)
 
 instance Show Stmt where
-    show (SAssign x a _) = x ++ " := " ++ (show a) ++ ";"
-    show (SSkip _) = "skip;"
-    show (SSeq ss) = "(" ++ ((init . init) (concat (map (((flip (++)) " ") . show) ss))) ++ ");"
-    show (SIf b _ s1 s2) = "if " ++ (show b) ++ " then " ++ (show s1) ++ " else " ++ (show s2)
-    show (SWhile b _ s) = "while " ++ (show b) ++ " do " ++ (show s)
+    show (SAssign x a _) = x ++ " := " ++ (show a)
+    show (SSkip _) = "skip"
+    show (SSeq ss) = (concat (List.intersperse "; " (map show ss)))
+    show (SIf b _ s1 s2) = "if " ++ (show b) ++ " then (" ++ (show s1) ++ ") else (" ++ (show s2) ++ ")"
+    show (SWhile b _ s) = "while " ++ (show b) ++ " do (" ++ (show s) ++ ")"
 
 data Block = BAssign Var AExp Lab | BSkip Lab | BBExp BExp Lab deriving (Eq, Ord)
 
@@ -71,11 +72,11 @@ instance Show Block where
     show (BBExp b l) = "[" ++ (show b) ++ "]^" ++ (show l)
 
 showL :: Stmt -> String
-showL (SAssign x a l) = "[" ++ x ++ " := " ++ (show a) ++ "]^" ++ (show l) ++ ";"
-showL (SSkip l) = "[" ++ "skip" ++ "]^" ++ (show l) ++ ";"
-showL (SSeq ss) = "(" ++ ((init . init) (concat (map (((flip (++)) " ") . showL) ss))) ++ ");"
-showL (SIf b l s1 s2) = "if " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " then " ++ (showL s1) ++ " else " ++ (showL s2)
-showL (SWhile b l s) = "while " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " do " ++ (showL s)
+showL (SAssign x a l) = "[" ++ x ++ " := " ++ (show a) ++ "]^" ++ (show l)
+showL (SSkip l) = "[" ++ "skip" ++ "]^" ++ (show l)
+showL (SSeq ss) = (concat (List.intersperse "; " (map showL ss)))
+showL (SIf b l s1 s2) = "if " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " then (" ++ (showL s1) ++ ") else (" ++ (showL s2) ++ ")"
+showL (SWhile b l s) = "while " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " do (" ++ (showL s) ++ ")"
 
 parse :: String -> Stmt
 parse s = case runIdentity $ runParserT whileParser 1 "" s of
