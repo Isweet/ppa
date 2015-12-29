@@ -1,4 +1,4 @@
-# Principles of Program Analysis in Haskell
+# Principles of Program Analysis (in Haskell)
 ## by Flemming Nielson, Hanne Riis Nielson, and Chris Hankin
 
 ### Summary
