@@ -1,3 +1,5 @@
+module Main (main) where
+
 import PPA.While
 
 import qualified Data.Set as Set
