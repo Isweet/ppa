@@ -12,7 +12,7 @@ book.
     % git clone git@github.com:Isweet/ppa.git
     % cd ppa
     % cabal sandbox init
-    % cabal build --ghc
+    % cabal build
     % cabal test
 
 ### Parser
