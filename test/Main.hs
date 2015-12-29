@@ -1,9 +1,12 @@
 module Main (main) where
 
-import PPA.While
+import Prelude hiding (init)
 
 import qualified Data.Set as Set
 import qualified Data.List as List
+
+import PPA.Lang.While.Internal.Syntax
+import PPA.Lang.While.Util
 
 -- Convenience
 
@@ -20,13 +23,13 @@ printCase name prog = do
     putStr $ name ++ ": "
     printStmt s
     putStr $ "labels(" ++ name ++ ") = "
-    printSet $ wlabels s
+    printSet $ labels s
     putStr $ "init(" ++ name ++ ")   = "
-    print $ winit s
+    print $ init s
     putStr $ "flow(" ++ name ++ ")   = "
-    printSet $ wflow s
+    printSet $ flow s
     putStr $ "final(" ++ name ++ ")  = "
-    printSet $ wfinal s
+    printSet $ final s
 
 -- Progs
 

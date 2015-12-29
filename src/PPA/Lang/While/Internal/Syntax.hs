@@ -1,10 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module PPA.While (Stmt, Block, showL, parse, winit, wfinal, wblocks, wlabels, wflow) where
+module PPA.Lang.While.Internal.Syntax where
 
 import Control.Monad.Identity
 
-import Prelude hiding (Num, GT, LT, init)
+import Prelude hiding (Num, GT, LT)
 import Text.Parsec hiding (parse)
 import Text.ParserCombinators.Parsec hiding (parse)
 import qualified Text.ParserCombinators.Parsec.Char as Char
@@ -64,13 +64,6 @@ instance Show Stmt where
     show (SIf b _ s1 s2) = "if " ++ (show b) ++ " then (" ++ (show s1) ++ ") else (" ++ (show s2) ++ ")"
     show (SWhile b _ s) = "while " ++ (show b) ++ " do (" ++ (show s) ++ ")"
 
-data Block = BAssign Var AExp Lab | BSkip Lab | BBExp BExp Lab deriving (Eq, Ord)
-
-instance Show Block where
-    show (BAssign x a l) = "[" ++ x ++ " := " ++ (show a) ++ "]^" ++ (show l)
-    show (BSkip l) = "[" ++ "skip" ++ "]^" ++ (show l)
-    show (BBExp b l) = "[" ++ (show b) ++ "]^" ++ (show l)
-
 showL :: Stmt -> String
 showL (SAssign x a l) = "[" ++ x ++ " := " ++ (show a) ++ "]^" ++ (show l)
 showL (SSkip l) = "[" ++ "skip" ++ "]^" ++ (show l)
@@ -82,42 +75,6 @@ parse :: String -> Stmt
 parse s = case runIdentity $ runParserT whileParser 1 "" s of
     Left l -> error $ show l
     Right r -> r
-
-winit :: Stmt -> Lab
-winit (SAssign _ _ l) = l
-winit (SSkip l) = l
-winit (SSeq ss) = (winit . head) ss
-winit (SIf _ l _ _) = l
-winit (SWhile _ l _) = l
-
-wfinal :: Stmt -> Set.Set Lab
-wfinal (SAssign _ _ l) = Set.singleton l
-wfinal (SSkip l) = Set.singleton l
-wfinal (SSeq ss) = (wfinal . last) ss
-wfinal (SIf _ _ s1 s2) = Set.union (wfinal s1) (wfinal s2)
-wfinal (SWhile _ l _) = Set.singleton l
-
-wblocks :: Stmt -> Set.Set Block
-wblocks (SAssign x a l) = Set.singleton (BAssign x a l)
-wblocks (SSkip l) = Set.singleton (BSkip l)
-wblocks (SSeq ss) = Set.unions $ map wblocks ss
-wblocks (SIf b l s1 s2) = Set.unions [Set.singleton (BBExp b l), wblocks s1, wblocks s2]
-wblocks (SWhile b l s) = Set.union (Set.singleton (BBExp b l)) (wblocks s)
-
-wlabels :: Stmt -> Set.Set Lab
-wlabels s = Set.map getLabel (wblocks s)
-    where getLabel (BAssign _ _ l) = l
-          getLabel (BSkip l) = l
-          getLabel (BBExp _ l) = l
-
-wflow :: Stmt -> Set.Set (Lab, Lab)
-wflow (SAssign _ _ _) = Set.empty
-wflow (SSkip _) = Set.empty
-wflow (SSeq ss) = Set.union (Set.unions $ map wflow ss) (Set.unions $ map2 (\ s1 s2 -> Set.map (\ l -> (l, winit s2)) $ wfinal s1) ss)
-    where map2 f (x:y:[]) = (f x y):[] -- Sequences must have at least 2 statements, guaranteed by parser
-          map2 f (x:(ys@(y:t))) = (f x y):(map2 f ys)
-wflow (SIf _ l s1 s2) = Set.unions [wflow s1, wflow s2, Set.singleton (l, winit s1), Set.singleton (l, winit s2)]
-wflow (SWhile _ l s) = Set.unions [wflow s, Set.singleton (l, winit s), Set.map (\ l' -> (l', l)) $ wfinal s]
 
 -- Helpers
 toSeq :: [Stmt] -> Stmt

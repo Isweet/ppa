@@ -17,14 +17,14 @@ extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     PPA.While
-  -- other-modules:       
+  exposed-modules:     PPA.Lang.While.Syntax PPA.Lang.While.Internal.Syntax PPA.Lang.While.Util
+--  other-modules:
   other-extensions:    FlexibleContexts
   build-depends:       base >=4.8 && <4.9, mtl >=2.2 && <2.3, parsec >=3.1 && <3.2, containers >=0.5 && <0.6
   hs-source-dirs:      src
   default-language:    Haskell2010
 
-Test-Suite tests
+test-suite tests
   type:                exitcode-stdio-1.0
   main-is:             Main.hs
   hs-source-dirs:      test
