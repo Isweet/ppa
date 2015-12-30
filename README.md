@@ -24,9 +24,10 @@ except that it includes functionality for generating a labeled AST.
 Make sure you have a sandbox created (as per the build instructions above), then:
 
     % cabal repl
-    *PPA.While> let factorial = "y:=x; z:=1; while y>1 do (z:=z*y; y:=y-1); y:=0"
-    *PPA.While> let s = parse factorial
-    *PPA.While> showL s
+    *PPA.Lang.While.Syntax> :module +PPA.Lang.While.Util
+    *PPA.Lang.While.Syntax PPA.Lang.While.Util> let factorial = "y:=x; z:=1; while y>1 do (z:=z*y; y:=y-1); y:=0"
+    *PPA.Lang.While.Syntax PPA.Lang.While.Util> let s = read factorial :: Stmt
+    *PPA.Lang.While.Syntax PPA.Lang.While.Util> showL s
     "[y := x]^1; [z := 1]^2; while [(y > 1)]^3 do ([z := (z * y)]^4; [y := (y - 1)]^5); [y := 0]^6"
-    *PPA.While> wflow s
+    *PPA.Lang.While.Syntax PPA.Lang.While.Util> flow s
     fromList [(1,2),(2,3),(3,4),(3,6),(4,5),(5,3)]

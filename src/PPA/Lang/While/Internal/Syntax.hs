@@ -136,7 +136,9 @@ integer = Token.integer whileLexer
 whileParser :: WhileParser
 whileParser = do
     whiteSpace
-    stmt
+    ret <- stmt
+    eof
+    return ret
 
 stmt :: WhileParser
 stmt =      parens stmt
@@ -218,7 +220,7 @@ termB =     parens bExp
                                    <|> (reservedOp "<" >> return LT)
 
 bExp :: Parsec String Integer BExp
-bExp = Expr.buildExpressionParser opB termB
+bExp = Expr.buildExpressionParser opB termB <?> "boolean expression"
 
     -- AExp
 opA = [ [ Expr.Infix (reservedOp "*" >> return (AOpA Multiply)) Expr.AssocLeft,
@@ -235,4 +237,4 @@ termA =     parens aExp
                 return $ ANum num
 
 aExp :: Parsec String Integer AExp
-aExp = Expr.buildExpressionParser opA termA
+aExp = Expr.buildExpressionParser opA termA <?> "arithmetic expression"
