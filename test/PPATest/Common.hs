@@ -10,7 +10,7 @@ ifBasic =
       \     (skip)"
 
 ifTwice :: String
-ifTwice = 
+ifTwice =
     "   if (a > 0 || a < 0) then \ 
       \     (x := -2)            \ 
       \ else                     \ 
@@ -23,7 +23,7 @@ ifTwice =
 {- y^x
  - result stored in z -}
 power :: String
-power = 
+power =
     "   z := 1;             \
       \ while (x > 0) do    \
       \     (z := z * y;    \
@@ -32,7 +32,7 @@ power =
 {- x!
  - result stored in z -}
 factorial :: String
-factorial = 
+factorial =
     "   y := x;             \
       \ z := 1;             \
       \ while (y > 1) do    \
@@ -40,4 +40,10 @@ factorial =
       \      y := y - 1);   \
       \ y := 0"
 
-
+available :: String
+available =
+    "   x := a + b;             \
+      \ y := a * b;             \
+      \ while (y > a + b) do    \
+      \     (a := a + 1;        \
+      \      x := a + b)"

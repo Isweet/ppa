@@ -17,3 +17,5 @@ spec = do
             (read . show) power `shouldBe` power
         it "-- factorial" $
             (read . show) factorial `shouldBe` factorial
+        it "-- available" $
+            (read . show) available `shouldBe` available
