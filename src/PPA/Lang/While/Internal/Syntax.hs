@@ -2,51 +2,61 @@
 
 module PPA.Lang.While.Internal.Syntax where
 
-import Control.Monad.Identity
-
 import Prelude hiding (Num, GT, LT)
-import Text.Parsec hiding (parse)
-import Text.ParserCombinators.Parsec hiding (parse)
+import Text.Parsec
 import qualified Text.ParserCombinators.Parsec.Char as Char
 import qualified Text.ParserCombinators.Parsec.Language as Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
 import qualified Text.ParserCombinators.Parsec.Expr as Expr
 
-import qualified Data.Set as Set
 import qualified Data.List as List
 
+-- DATA
 type Var = String
 type Num = Integer
 type Lab = Integer
 
 data OpA = Add | Subtract | Multiply | Divide deriving (Eq, Ord)
 
+data OpB = And | Or deriving (Eq, Ord)
+
+data OpR = LT | GT deriving (Eq, Ord)
+
+data AExp = AVar Var 
+    | ANum Num 
+    | AOpA OpA AExp AExp deriving (Eq, Ord)
+
+data BExp = BTrue 
+    | BFalse 
+    | BNot BExp 
+    | BOpB OpB BExp BExp 
+    | BOpR OpR AExp AExp deriving (Eq, Ord)
+
+data Stmt = SAssign Var AExp Lab 
+    | SSkip Lab 
+    | SSeq [Stmt] 
+    | SIf BExp Lab Stmt Stmt 
+    | SWhile BExp Lab Stmt deriving (Eq, Ord)
+
+-- SHOW
 instance Show OpA where
     show Add = "+"
     show Subtract = "-"
     show Multiply = "*"
     show Divide = "/"
 
-data OpB = And | Or deriving (Eq, Ord)
-
 instance Show OpB where
     show And = "&&"
     show Or = "||"
-
-data OpR = LT | GT deriving (Eq, Ord)
 
 instance Show OpR where
     show LT = "<"
     show GT = ">"
 
-data AExp = AVar Var | ANum Num | AOpA OpA AExp AExp deriving (Eq, Ord)
-
 instance Show AExp where
     show (AVar x) = x
     show (ANum n) = show n
     show (AOpA o a1 a2) = "(" ++ (show a1) ++ " " ++ (show o) ++ " " ++ (show a2) ++ ")"
-
-data BExp = BTrue | BFalse | BNot BExp | BOpB OpB BExp BExp | BOpR OpR AExp AExp deriving (Eq, Ord)
 
 instance Show BExp where
     show BTrue = "true"
@@ -55,8 +65,6 @@ instance Show BExp where
     show (BOpB o b1 b2) = "(" ++ (show b1) ++ " " ++ (show o) ++ " " ++ (show b2) ++ ")"
     show (BOpR o a1 a2) = "(" ++ (show a1) ++ " " ++ (show o) ++ " " ++ (show a2) ++ ")"
 
-data Stmt = SAssign Var AExp Lab | SSkip Lab | SSeq [Stmt] | SIf BExp Lab Stmt Stmt | SWhile BExp Lab Stmt deriving (Eq, Ord)
-
 instance Show Stmt where
     show (SAssign x a _) = x ++ " := " ++ (show a)
     show (SSkip _) = "skip"
@@ -64,6 +72,7 @@ instance Show Stmt where
     show (SIf b _ s1 s2) = "if " ++ (show b) ++ " then (" ++ (show s1) ++ ") else (" ++ (show s2) ++ ")"
     show (SWhile b _ s) = "while " ++ (show b) ++ " do (" ++ (show s) ++ ")"
 
+-- SHOW w/ Labels
 showL :: Stmt -> String
 showL (SAssign x a l) = "[" ++ x ++ " := " ++ (show a) ++ "]^" ++ (show l)
 showL (SSkip l) = "[" ++ "skip" ++ "]^" ++ (show l)
@@ -71,20 +80,23 @@ showL (SSeq ss) = (concat (List.intersperse "; " (map showL ss)))
 showL (SIf b l s1 s2) = "if " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " then (" ++ (showL s1) ++ ") else (" ++ (showL s2) ++ ")"
 showL (SWhile b l s) = "while " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " do (" ++ (showL s) ++ ")"
 
-parse :: String -> Stmt
-parse s = case runIdentity $ runParserT whileParser 1 "" s of
-    Left l -> error $ show l
-    Right r -> r
+-- READ
+instance Read Stmt where
+    readsPrec p s = [((tryParse s), "")]
+        where
+            tryParse :: String -> Stmt
+            tryParse s = case runParser whileParser 1 "" s of
+                Left l -> error $ show l
+                Right r -> r
 
--- Helpers
-toSeq :: [Stmt] -> Stmt
-toSeq (h:[]) = h
-toSeq l = SSeq l
+-- PARSING
+type WhileParser = Parsec String Integer Stmt
 
 -- While Definition
 whileDef = Language.emptyDef 
             {
                 Token.commentStart  = "/*",
+                Token.commentEnd    = "*/",
                 Token.commentLine   = "//",
                 Token.identStart    = Char.letter,
                 Token.identLetter   = Char.alphaNum,
@@ -116,32 +128,37 @@ reserved = Token.reserved whileLexer
 reservedOp = Token.reservedOp whileLexer
 parens = Token.parens whileLexer
 
-whiteSpace = Token.whiteSpace whileLexer
+whiteSpace = Token.whiteSpace whileLexer <?> "whitespace"
 semi = Token.semi whileLexer
 integer = Token.integer whileLexer
 
 -- Parser
+whileParser :: WhileParser
+whileParser = do
+    whiteSpace
+    stmt
 
-    -- Stmt
-whileParser :: ParsecT String Integer Identity Stmt
-whileParser = whiteSpace >> stmt
+stmt :: WhileParser
+stmt =      parens stmt
+        <|> seqStmt
+        <?> "statement"
 
-stmt :: ParsecT String Integer Identity Stmt
-stmt =     parens stmt
-       <|> seqStmt 
-
-seqStmt :: ParsecT String Integer Identity Stmt
+seqStmt :: WhileParser
 seqStmt = do
     stmts <- (sepBy1 stmt' semi)
     return $ toSeq stmts
+    where
+        toSeq :: [Stmt] -> Stmt
+        toSeq (h:[]) = h
+        toSeq l = SSeq l
 
-stmt' :: ParsecT String Integer Identity Stmt
+stmt' :: WhileParser
 stmt' =     ifStmt
         <|> whileStmt
         <|> skipStmt
         <|> assignStmt
 
-assignStmt :: ParsecT String Integer Identity Stmt
+assignStmt :: WhileParser
 assignStmt = do
     var <- identifier
     reservedOp ":="
@@ -149,15 +166,17 @@ assignStmt = do
     l <- getState
     modifyState (+1)
     return $ SAssign var exp l
+    <?> "assignment"
 
-skipStmt :: ParsecT String Integer Identity Stmt
+skipStmt :: WhileParser
 skipStmt = do 
     reserved "skip"
     l <- getState
     modifyState (+1)
     return $ SSkip l
+    <?> "skip"
 
-ifStmt :: ParsecT String Integer Identity Stmt
+ifStmt :: WhileParser
 ifStmt = do 
     reserved "if"
     cond <- bExp
@@ -168,8 +187,9 @@ ifStmt = do
     reserved "else"
     s2 <- stmt
     return $ SIf cond l s1 s2
+    <?> "if"
 
-whileStmt :: ParsecT String Integer Identity Stmt
+whileStmt :: WhileParser
 whileStmt = do 
     reserved "while"
     cond <- bExp
@@ -178,6 +198,7 @@ whileStmt = do
     reserved "do"
     s <- stmt
     return $ SWhile cond l s
+    <?> "while"
 
     -- BExp
 opB = [ [ Expr.Prefix (reservedOp "~"  >> return (BNot    ))                ],
@@ -196,7 +217,7 @@ termB =     parens bExp
                         relation =     (reservedOp ">" >> return GT)
                                    <|> (reservedOp "<" >> return LT)
 
-bExp :: ParsecT String Integer Identity BExp
+bExp :: Parsec String Integer BExp
 bExp = Expr.buildExpressionParser opB termB
 
     -- AExp
@@ -213,5 +234,5 @@ termA =     parens aExp
                 num <- integer
                 return $ ANum num
 
-aExp :: ParsecT String Integer Identity AExp
+aExp :: Parsec String Integer AExp
 aExp = Expr.buildExpressionParser opA termA

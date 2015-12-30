@@ -19,7 +19,7 @@ printSet s = putStrLn $ "{" ++ es ++ "}"
 
 printCase :: String -> String -> IO ()
 printCase name prog = do
-    let s = parse prog
+    let s = read prog
     putStr $ name ++ ": "
     printStmt s
     putStr $ "labels(" ++ name ++ ") = "

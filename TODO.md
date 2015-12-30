@@ -1,6 +1,6 @@
 # TODO
 
 - Write real tests, using exposed Internal module
-- Implement Read typeclass for Stmt, and parse / print using read / show.
-    - Is this a good idea?
 - Update README
+- Add labels to parsers for more readable parse failures
+- For some reason "skip := 3" parses as SSkip... not sure why yet
