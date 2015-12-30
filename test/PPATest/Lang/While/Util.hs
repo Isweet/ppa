@@ -1,4 +1,4 @@
-module PPATest.Lang.While.UtilSpec (spec) where
+module PPATest.Lang.While.Util (spec) where
 
 import Prelude hiding (init)
 
@@ -8,8 +8,8 @@ import PPATest.Common
 
 import qualified Data.Set as Set
 
+import PPA.Lang.While
 import PPA.Lang.While.Util
-import PPA.Lang.While.Syntax
 
 spec :: Spec
 spec = do
@@ -24,6 +24,7 @@ spec = do
             (init $ factorialS) `shouldBe` 1
         it "-- available" $ do
             (init $ availableS) `shouldBe` 1
+
     describe "final" $ do
         it "-- ifBasic" $ do
             (final $ ifBasicS) `shouldBe` Set.fromList [2, 3]
@@ -35,6 +36,7 @@ spec = do
             (final $ factorialS) `shouldBe` Set.fromList [6]
         it "-- available" $ do
             (final $ availableS) `shouldBe` Set.fromList [3]
+
     describe "flow" $ do
         it "-- ifBasic" $
             (flow $ ifBasicS) `shouldBe` Set.fromList [(1,2), (1,3)]
@@ -44,11 +46,12 @@ spec = do
             (flow $ powerS) `shouldBe` Set.fromList [(1,2), (2,3), (3,4), (4,2)]
         it "-- factorial" $
             (flow $ factorialS) `shouldBe` Set.fromList [(1,2), (2,3), (3,4), (3,6), (4,5), (5,3)]
+
     describe "free variables (fv)" $
         it "-- factorial" $
             (fv $ factorialS) `shouldBe` Set.fromList ["x", "y", "z"]
-
                 where
+
                     ifBasicS :: Stmt
                     ifBasicS = read ifBasic
 
@@ -63,3 +66,4 @@ spec = do
 
                     availableS :: Stmt
                     availableS = read available
+

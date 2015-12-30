@@ -2,16 +2,16 @@ module Main (main) where
 
 import Test.Hspec
 
-import qualified PPATest.Lang.While.SyntaxSpec
-import qualified PPATest.Lang.While.UtilSpec
+import qualified PPATest.Lang.While
+import qualified PPATest.Lang.While.Internal
+import qualified PPATest.Lang.While.Util
 
-import qualified PPATest.Lang.While.Internal.SyntaxSpec
 
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "Lang.While.SyntaxSpec"              PPATest.Lang.While.SyntaxSpec.spec
-  describe "Lang.While.UtilSpec"                PPATest.Lang.While.UtilSpec.spec
-  describe "Lang.While.Internal.SyntaxSpec"     PPATest.Lang.While.Internal.SyntaxSpec.spec
+    describe "Lang.While"           PPATest.Lang.While.spec
+    describe "Lang.While.Internal"  PPATest.Lang.While.Internal.spec
+    describe "Lang.While.Util"      PPATest.Lang.While.Util.spec

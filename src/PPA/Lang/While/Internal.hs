@@ -1,13 +1,14 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module PPA.Lang.While.Internal.Syntax where
+module PPA.Lang.While.Internal where
 
 import Prelude hiding (Num, GT, LT)
+
 import Text.Parsec
-import qualified Text.ParserCombinators.Parsec.Char as Char
-import qualified Text.ParserCombinators.Parsec.Language as Language
-import qualified Text.ParserCombinators.Parsec.Token as Token
-import qualified Text.ParserCombinators.Parsec.Expr as Expr
+import qualified Text.Parsec.Char as Char
+import qualified Text.Parsec.Language as Language
+import qualified Text.Parsec.Token as Token
+import qualified Text.Parsec.Expr as Expr
 
 import qualified Data.List as List
 

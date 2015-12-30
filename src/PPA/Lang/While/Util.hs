@@ -4,7 +4,7 @@ import Prelude hiding (init)
 
 import qualified Data.Set as Set
 
-import PPA.Lang.While.Internal.Syntax
+import PPA.Lang.While.Internal
 
 data Block = BAssign Var AExp Lab | BSkip Lab | BBExp BExp Lab deriving (Eq, Ord)
 
@@ -12,7 +12,7 @@ instance Show Block where
     show (BAssign x a l) = "(" ++ (show l) ++ ") " ++ (show $ SAssign x a l)
     show (BSkip l)       = "(" ++ (show l) ++ ") " ++ (show $ SSkip l)
     show (BBExp b l)     = "(" ++ (show l) ++ ") " ++ (show b)
-
+-- 2.1, p. 36
 init :: Stmt -> Lab
 init (SAssign _ _ l) = l
 init (SSkip l)       = l
@@ -23,6 +23,7 @@ init (SSeq ss)       = init s_1
 init (SIf _ l _ _)   = l
 init (SWhile _ l _)  = l
 
+-- 2.1, p. 36
 final :: Stmt -> Set.Set Lab
 final (SAssign _ _ l) = Set.singleton l
 final (SSkip l)       = Set.singleton l
@@ -33,6 +34,7 @@ final (SSeq ss)       = final s_n
 final (SIf _ _ s1 s2) = Set.unions [(final s1), (final s2)]
 final (SWhile _ l _)  = Set.singleton l
 
+-- 2.1, p. 36
 blocks :: Stmt -> Set.Set Block
 blocks (SAssign x a l) = Set.singleton $ BAssign x a l
 blocks (SSkip l)       = Set.singleton $ BSkip l
@@ -43,6 +45,7 @@ blocks (SSeq ss)       = Set.unions $ bs
 blocks (SIf b l s1 s2) = Set.unions [Set.singleton $ BBExp b l, blocks s1, blocks s2]
 blocks (SWhile b l s)  = Set.unions [Set.singleton $ BBExp b l, blocks s]
 
+-- 2.1, p. 37
 labels :: Stmt -> Set.Set Lab
 labels s = Set.map getLabel $ blocks s
     where 
@@ -50,25 +53,7 @@ labels s = Set.map getLabel $ blocks s
         getLabel (BSkip l)       = l
         getLabel (BBExp _ l)     = l
 
-fvA :: AExp -> Set.Set Var
-fvA (AVar x)       = Set.singleton x
-fvA (ANum _)       = Set.empty
-fvA (AOpA _ a1 a2) = Set.unions [fvA a1, fvA a2]
-
-fvB :: BExp -> Set.Set Var
-fvB (BTrue)        = Set.empty
-fvB (BFalse)       = Set.empty
-fvB (BNot b)       = fvB b
-fvB (BOpB _ b1 b2) = Set.unions [fvB b1, fvB b2]
-fvB (BOpR _ a1 a2) = Set.unions [fvA a1, fvA a2]
-
-fv :: Stmt -> Set.Set Var
-fv (SAssign x a _) = Set.unions [Set.singleton x, fvA a]
-fv (SSkip _)       = Set.empty
-fv (SSeq ss)       = Set.unions $ map fv ss
-fv (SIf b _ s1 s2) = Set.unions [fvB b, fv s1, fv s2]
-fv (SWhile b _ s)  = Set.unions [fvB b, fv s]
-
+-- 2.1, p. 37
 flow :: Stmt -> Set.Set (Lab, Lab)
 flow (SAssign _ _ _) = Set.empty
 flow (SSkip _)       = Set.empty
@@ -101,6 +86,29 @@ flow (SWhile _ l s) = Set.unions [subflows, bodyflows]
         bodyflows :: Set.Set (Lab, Lab)
         bodyflows = Set.unions [Set.singleton (l, init s), Set.map (\ l' -> (l', l)) $ final s]
 
+-- 2.1, p. 38
 flowReverse :: Stmt -> Set.Set (Lab, Lab)
 flowReverse s = Set.map (\ (l, l') -> (l', l)) $ flow s
+
+fvA :: AExp -> Set.Set Var
+fvA (AVar x)       = Set.singleton x
+fvA (ANum _)       = Set.empty
+fvA (AOpA _ a1 a2) = Set.unions [fvA a1, fvA a2]
+
+fvB :: BExp -> Set.Set Var
+fvB (BTrue)        = Set.empty
+fvB (BFalse)       = Set.empty
+fvB (BNot b)       = fvB b
+fvB (BOpB _ b1 b2) = Set.unions [fvB b1, fvB b2]
+fvB (BOpR _ a1 a2) = Set.unions [fvA a1, fvA a2]
+
+-- 2.1, p. 38
+-- NOTE: Referenced, but not defined
+fv :: Stmt -> Set.Set Var
+fv (SAssign x a _) = Set.unions [Set.singleton x, fvA a]
+fv (SSkip _)       = Set.empty
+fv (SSeq ss)       = Set.unions $ map fv ss
+fv (SIf b _ s1 s2) = Set.unions [fvB b, fv s1, fv s2]
+fv (SWhile b _ s)  = Set.unions [fvB b, fv s]
+
 
