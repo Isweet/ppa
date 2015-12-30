@@ -1,3 +1,4 @@
 # TODO
 
-- Write real tests, using exposed Internal module
+- More tests (including Internal module)
+- Available Expression Analysis
