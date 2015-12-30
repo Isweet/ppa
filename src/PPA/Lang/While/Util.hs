@@ -1,10 +1,10 @@
-module PPA.Lang.While.Util (Block, init, final, blocks, labels, fv, flow) where
+module PPA.Lang.While.Util (Block (..), init, final, blocks, getLabel, labels, fv, fvA, fvB, flow, aExp, aExpA, aExpB) where
 
 import Prelude hiding (init)
 
 import qualified Data.Set as Set
 
-import PPA.Lang.While.Internal
+import PPA.Lang.While.Internal hiding (aExp)
 
 data Block = BAssign Var AExp Lab | BSkip Lab | BBExp BExp Lab deriving (Eq, Ord)
 
@@ -12,6 +12,7 @@ instance Show Block where
     show (BAssign x a l) = "(" ++ (show l) ++ ") " ++ (show $ SAssign x a l)
     show (BSkip l)       = "(" ++ (show l) ++ ") " ++ (show $ SSkip l)
     show (BBExp b l)     = "(" ++ (show l) ++ ") " ++ (show b)
+
 -- 2.1, p. 36
 init :: Stmt -> Lab
 init (SAssign _ _ l) = l
@@ -45,13 +46,14 @@ blocks (SSeq ss)       = Set.unions $ bs
 blocks (SIf b l s1 s2) = Set.unions [Set.singleton $ BBExp b l, blocks s1, blocks s2]
 blocks (SWhile b l s)  = Set.unions [Set.singleton $ BBExp b l, blocks s]
 
+getLabel :: Block -> Lab
+getLabel (BAssign _ _ l) = l
+getLabel (BSkip l)       = l
+getLabel (BBExp _ l)     = l
+
 -- 2.1, p. 37
 labels :: Stmt -> Set.Set Lab
 labels s = Set.map getLabel $ blocks s
-    where 
-        getLabel (BAssign _ _ l) = l
-        getLabel (BSkip l)       = l
-        getLabel (BBExp _ l)     = l
 
 -- 2.1, p. 37
 flow :: Stmt -> Set.Set (Lab, Lab)
@@ -110,5 +112,26 @@ fv (SSkip _)       = Set.empty
 fv (SSeq ss)       = Set.unions $ map fv ss
 fv (SIf b _ s1 s2) = Set.unions [fvB b, fv s1, fv s2]
 fv (SWhile b _ s)  = Set.unions [fvB b, fv s]
+
+aExpA :: AExp -> Set.Set AExp
+aExpA (AVar _) = Set.empty
+aExpA (ANum _) = Set.empty
+aExpA a@(AOpA _ a1 a2) = Set.unions [Set.singleton a, aExpA a1, aExpA a2]
+
+aExpB :: BExp -> Set.Set AExp
+aExpB (BTrue) = Set.empty
+aExpB (BFalse) = Set.empty
+aExpB (BNot b) = aExpB b
+aExpB (BOpB _ b1 b2) = Set.unions [aExpB b1, aExpB b2]
+aExpB (BOpR _ a1 a2) = Set.unions [aExpA a1, aExpA a2]
+
+-- 2.1, p. 39
+-- NOTE: Referenced, but not defined
+aExp :: Stmt -> Set.Set AExp
+aExp (SAssign _ a _) = aExpA a
+aExp (SSkip _) = Set.empty
+aExp (SSeq ss) = Set.unions $ map aExp ss
+aExp (SIf b _ s1 s2) = Set.unions [aExpB b, aExp s1, aExp s2]
+aExp (SWhile b _ s) = Set.unions [aExpB b, aExp s]
 
 
