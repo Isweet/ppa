@@ -17,7 +17,7 @@ extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     PPA.Lang.While PPA.Lang.While.Internal PPA.Lang.While.Util
+  exposed-modules:     PPA.Lang.While PPA.Lang.While.Internal PPA.Lang.While.Util PPA.Analysis.Util PPA.Analysis.AvailableExpressions
 --  other-modules:
   other-extensions:    FlexibleContexts
   build-depends:       base == 4.8.*, parsec == 3.1.*, containers == 0.5.*

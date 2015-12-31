@@ -1,8 +1,10 @@
-module PPA.Lang.While.Util (Block (..), init, final, blocks, getLabel, labels, fv, fvA, fvB, flow, aExp, aExpA, aExpB) where
+module PPA.Lang.While.Util (Block (..), init, final, blocks, blockMap, labels, fv, fvA, fvB, flow, aExp, aExpA, aExpB) where
 
 import Prelude hiding (init)
 
 import qualified Data.Set as Set
+import qualified Data.Map.Strict as Map
+import qualified Data.Maybe as Maybe
 
 import PPA.Lang.While.Internal hiding (aExp)
 
@@ -50,6 +52,12 @@ getLabel :: Block -> Lab
 getLabel (BAssign _ _ l) = l
 getLabel (BSkip l)       = l
 getLabel (BBExp _ l)     = l
+
+blockMap :: Set.Set Block -> Lab -> Block
+blockMap bs l = Maybe.fromJust $ Map.lookup l bm
+    where
+        bm :: Map.Map Lab Block
+        bm = Set.foldl (\ acc x -> Map.insert (getLabel x) x acc) Map.empty bs
 
 -- 2.1, p. 37
 labels :: Stmt -> Set.Set Lab
