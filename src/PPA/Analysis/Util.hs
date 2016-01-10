@@ -6,28 +6,22 @@ import PPA.Lang.While
 import PPA.Lang.While.Util
 
 -- Won't work, can't compare functions --> can't take the fixpoint of a solution
-data Solution = Solution {
-                    entry :: Lab -> Set.Set AExp,
-                    exit  :: Lab -> Set.Set AExp
-                }
-
+data Solution = Solution { entry :: Lab -> Set.Set AExp
+                         , exit  :: Lab -> Set.Set AExp
+                         }
 
 defaultMust :: Stmt -> Solution
-defaultMust s = 
-    Solution {
-                entry = (\ l -> aExpS),
-                exit  = (\ l -> aExpS)
-             }
+defaultMust s = Solution { entry = const aExpS
+                         , exit  = const aExpS
+                         }
     where
         aExpS :: Set.Set AExp
         aExpS = aExp s
 
 defaultMay :: Stmt -> Solution
-defaultMay s =
-    Solution {
-                entry = (\ l -> Set.empty),
-                exit  = (\ l -> Set.empty)
-             }
+defaultMay s = Solution { entry = const Set.empty
+                        , exit  = const Set.empty
+                        }
 
 fix :: (Eq a) => a -> (a -> a) -> a
 fix start f = 

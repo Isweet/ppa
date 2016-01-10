@@ -69,7 +69,7 @@ instance Show BExp where
 instance Show Stmt where
     show (SAssign x a _) = x ++ " := " ++ (show a)
     show (SSkip _) = "skip"
-    show (SSeq ss) = (concat (List.intersperse "; " (map show ss)))
+    show (SSeq ss) = List.intercalate "; " (map show ss)
     show (SIf b _ s1 s2) = "if " ++ (show b) ++ " then (" ++ (show s1) ++ ") else (" ++ (show s2) ++ ")"
     show (SWhile b _ s) = "while " ++ (show b) ++ " do (" ++ (show s) ++ ")"
 
@@ -77,7 +77,7 @@ instance Show Stmt where
 showL :: Stmt -> String
 showL (SAssign x a l) = "[" ++ x ++ " := " ++ (show a) ++ "]^" ++ (show l)
 showL (SSkip l) = "[" ++ "skip" ++ "]^" ++ (show l)
-showL (SSeq ss) = (concat (List.intersperse "; " (map showL ss)))
+showL (SSeq ss) = List.intercalate "; " (map showL ss)
 showL (SIf b l s1 s2) = "if " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " then (" ++ (showL s1) ++ ") else (" ++ (showL s2) ++ ")"
 showL (SWhile b l s) = "while " ++ "[" ++ (show b) ++ "]^" ++ (show l) ++ " do (" ++ (showL s) ++ ")"
 
@@ -152,7 +152,7 @@ seqStmt = do
     return $ toSeq stmts
     where
         toSeq :: [Stmt] -> Stmt
-        toSeq (h:[]) = h
+        toSeq ([h]) = h
         toSeq l = SSeq l
 
 stmt' :: WhileParser

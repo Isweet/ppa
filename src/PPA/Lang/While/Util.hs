@@ -11,8 +11,8 @@ import PPA.Lang.While.Internal hiding (aExp)
 data Block = BAssign Var AExp Lab | BSkip Lab | BBExp BExp Lab deriving (Eq, Ord)
 
 instance Show Block where
-    show (BAssign x a l) = "(" ++ (show l) ++ ") " ++ (show $ SAssign x a l)
-    show (BSkip l)       = "(" ++ (show l) ++ ") " ++ (show $ SSkip l)
+    show (BAssign x a l) = "(" ++ (show l) ++ ") " ++ show (SAssign x a l)
+    show (BSkip l)       = "(" ++ (show l) ++ ") " ++ show (SSkip l)
     show (BBExp b l)     = "(" ++ (show l) ++ ") " ++ (show b)
 
 -- 2.1, p. 36
@@ -41,7 +41,7 @@ final (SWhile _ l _)  = Set.singleton l
 blocks :: Stmt -> Set.Set Block
 blocks (SAssign x a l) = Set.singleton $ BAssign x a l
 blocks (SSkip l)       = Set.singleton $ BSkip l
-blocks (SSeq ss)       = Set.unions $ bs
+blocks (SSeq ss)       = Set.unions bs
     where
         bs :: [Set.Set Block]
         bs = map blocks ss
@@ -65,7 +65,7 @@ labels s = Set.map getLabel $ blocks s
 
 -- 2.1, p. 37
 flow :: Stmt -> Set.Set (Lab, Lab)
-flow (SAssign _ _ _) = Set.empty
+flow SAssign{} = Set.empty
 flow (SSkip _)       = Set.empty
 flow (SSeq ss)       = Set.unions [subflows, seqflows]
     where
@@ -79,7 +79,7 @@ flow (SSeq ss)       = Set.unions [subflows, seqflows]
                 flowPair s1 s2 = Set.map (\ l -> (l, init s2)) $ final s1
 
                 mapPair :: (Stmt -> Stmt -> Set.Set (Lab, Lab)) -> [Stmt] -> [Set.Set (Lab, Lab)]
-                mapPair f (x:y:[])         = (f x y):[]
+                mapPair f ([x, y])         = [(f x y)]
                 mapPair f (x:(tail@(y:_))) = (f x y):(mapPair f tail)
 flow (SIf _ l s1 s2) = Set.unions [subflows, branchflows]
     where
